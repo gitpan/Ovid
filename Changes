@@ -1,0 +1,16 @@
+Revision history for Perl extension Ovid.
+
+0.04  Mon Sep 27 2004
+  -expand bundles into individual distributions
+
+0.03  Wed Sep  1 2004
+  -check for existing rpms, either installed or on disk
+  -bug fix to clear out old dependencies
+
+0.02  Mon Aug 16 2004
+  - copy sources to rpm source dir.
+
+0.01  Sat Aug 14 13:48:57 2004
+	- original version; created by h2xs 1.22 with options
+		-b 5.6.0 -Xn Ovid
+

@@ -1,0 +1,271 @@
+#!/usr/bin/perl
+use strict;
+use CPAN;
+use CPAN::Config;
+use ExtUtils::MakeMaker;
+use Getopt::Long;
+
+use Ovid::RunQuiet;
+use Ovid::Error;
+use Ovid::Package;
+use Ovid::Dependency;
+
+our $VERSION = '0.04';
+
+my %opts = (tmpdir => $ENV{TMP} || '/tmp', loglevel => [], packager => 'unknown@localhost');
+
+our %optionlist =
+(
+  'skipbuild|nobuild|n' => 'Just create the rpm, do not build',
+  'forcebuild'   => 'Build the rpm!',
+  'help|h'  => 'Help',
+  'loglevel|l=s' => 'Log level. Choices are: debug, info',
+  'logfile|f=s' => 'Log file',
+  'tmpdir|t=s'  => 'Temporary directory',
+  'packager|p'  => 'Packager',  
+  'version'     => 'Display version info',
+);
+
+exit(1) unless GetOptions(\%opts, keys %optionlist);
+
+if ($opts{'help'}){
+  my @opts;
+  while (my ($k,$v) = each %optionlist){
+    my ($t, undef) = split /=/, $k;
+    my @t = join ' | ' , map { length($_) > 1 ? qq[--$_] : qq[-$_] } split /\|/, $t; 
+    push @opts, qq[@t\t$v\n];
+  }
+  Usage(\@opts);
+  exit 0;
+}
+elsif ($opts{'version'})
+{
+  Version();
+  exit 0;
+}
+elsif (exists $opts{skipbuild} && exists $opts{forcebuild}) {
+  warning "skipbuild and forcebuild options are mutually exclusive";
+  exit 1;
+}
+
+
+$LOG_LEVEL = LOG_LEVEL_INFO;
+
+for my $loglevel (@{$opts{loglevel}})
+{
+  if ($loglevel =~ /debug/i){
+    $LOG_LEVEL &= LOG_LEVEL_DEBUG | LOG_LEVEL_INFO;
+  }
+  elsif ($loglevel =~ /info/i){
+    $LOG_LEVEL &= LOG_LEVEL_INFO;
+  }
+  else {
+    print STDERR "ignoring unknown log level: $loglevel\n";
+  }
+}
+
+our $LOGFILE = $opts{logfile};
+
+if ($LOGFILE){
+  unlink $LOGFILE;
+}
+else {
+  $LOGFILE = q[/dev/null];
+}
+
+
+my $src_dir = qq[$CPAN::Config->{keep_source_where}/authors/id];
+
+my %seen;
+my @queue = @ARGV;
+
+my %packages;
+my @packages;
+
+while (@queue)
+  {
+    my $item = pop @queue;
+    for my $obj (CPAN::Shell->expandany($item)){
+      
+      if (exists $seen{$item}){
+        info "skipping previously seen package $item";
+        next;
+      }
+
+      my $type = ref($obj);
+
+      if ($type eq 'CPAN::Bundle'){
+        push @queue, $obj->contains();
+        next;
+      }
+
+      my %opts_args = ( basedir => $src_dir, name => $item, logfile => $LOGFILE );
+      $opts_args{$_} = $opts{$_} for qw(packager tmpdir skipbuild forcebuild);
+
+      my $package = Ovid::Package->new( %opts_args);
+      
+      my $archive;
+            if ($type eq 'CPAN::Module'){
+        
+        $package->interrogate($obj);
+        
+        my $cpan_file = $obj->cpan_file;
+        debug "found Module [$item]. Converting to Distribution [$cpan_file]";
+        $obj = CPAN::Shell->expand("Distribution", $cpan_file);
+        $type = ref($obj);
+      }
+      
+      if ($type eq 'CPAN::Distribution')
+        { 
+          if ($obj->isa_perl){
+            info "Skipping perl distribution for package [$item]";
+            next;
+          }
+          
+          $package->interrogate($obj);
+          
+          if (my @mods = $obj->containsmods)
+            {
+              info "distribution $item contains modules @mods";
+              @seen{@mods} = (1) x scalar @mods;
+            }
+        
+          {
+           my $q = Ovid::RunQuiet->new; 
+           unless ($q->run( sub { $obj->get(); }, $LOGFILE )){
+            warning "possible failure for: $type->get() on distribution $item.";
+            next;
+           }
+          }
+         
+          my $dependency = Ovid::Dependency->new(dir => $obj->dir, logfile => $LOGFILE);
+          
+          #note: This call depends on passing dir arg to new method
+          $package->builder($dependency->builder);
+
+          $package->build_dir($obj->dir);
+
+          unless ($package->get_description($dependency->builder)){
+             $package->description($obj->as_string);
+          }
+
+          $seen{$item}++;
+
+          if (my @dependencies = $dependency->dependencies)
+            {
+              for my $dep (@dependencies)
+                {
+                    $package->requires($dep);
+                    
+                    next if exists $seen{$dep->{name}};
+                    
+                    debug "got dependency: $dep->{name} => $dep->{version}";
+
+                    push @queue, $dep->{name};
+                }
+            }
+          
+          push @packages, $package;
+        }
+    }
+  }
+
+for my $package (reverse @packages){
+  $package->make_rpm();
+}
+
+sub Usage
+{
+  my $opts = shift;
+  print STDERR <<EOF;
+
+$0: recursively builds perl CPAN modules and dependent modules as RPM files. 
+usage: $0 [optons] <perl-module-name> [ <another-module> ... ]
+options:
+@$opts
+EOF
+}
+
+sub Version
+{
+ print STDERR <<EOF;
+$0 -- version: $VERSION
+Copyright 2004 Gyepi Sam <gyepi\@praxis-sw.com>
+EOF
+
+}
+exit 0;
+
+__END__
+
+=head1 NAME
+
+Ovid - collection of scripts for recursively converting perl CPAN modules into RPM files. 
+
+=head1 SYNOPSIS
+
+ perl ovid [options] <cpan::module> 
+
+=head1 ABSTRACT
+
+Ovid recursively downloads and builds perl CPAN modules, and most required modules, as RPM files.
+Each RPM file lists all CPAN module dependencies so that rpm installation tools like
+apt-get, urpmi, yum, and others can automatically install all dependent files as well.
+
+=head1 DESCRIPTION
+
+Ovid recursively downloads and builds specified CPAN modules and all dependent modules as RPM files.
+Each RPM file contains dependency information that can be used by rpm tools to automatically install
+all the dependent modules.
+
+Ovid provides an automated solution to the problem of manually building dependent modules, an onerous
+task at best, or giving up and using the CPAN installer.
+
+=head1 OPTIONS
+
+=over 4
+
+=item  --packager | -p  "Your Name <you@example.com>"
+
+RPM Packager. Defaults to unknown@localhost.
+
+=item  --logfile | -f <logfile>
+
+Where to write the build log file. Defaults to /dev/null.
+
+=item  --loglevel | -l  {info|debug}
+
+Verbosity level.
+
+=item  --tmpdir | -t  <tmpdir>
+
+Temporary directory to be used for builds. Defaults to C<$ENV{TMP}> or /tmp.
+
+=item  --help | -h
+
+You're reading it.
+
+=item  --skipbuild | --nobuild | -n
+
+Just create the rpm spec file, do not build rpms.
+
+=back
+
+=head1  BUGS
+
+I would appreciate hearing of any problems with this program and am interested in feedback
+to help improve it.
+
+
+=head1 AUTHOR
+
+Gyepi Sam, E<lt>gyepi@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2004 by Gyepi Sam
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself. 
+
+=
