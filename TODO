@@ -1,17 +1,18 @@
 TODO list for Ovid.
 
+Replace CPAN module with native functions.
+
 Items closer to the top will likely be done first.
-
-Check for, and skip, installed dependencies. -- done aug 31, 2004
-
-Fix IO redirection
 
 Add support for Module::Build.
 
 Try harder to get module descriptions, copyright, and other metadata. 
 
-Change 'loglevel' to more standard 'verbosity'.
-
-Nicer looking help output.
 
 Create Bundle dummy packages that simply require component parts
+
+Done:
+Nicer looking help output.
+Change 'loglevel' to more standard 'verbosity'.
+Fix IO redirection -- IO redirection removed.
+Check for, and skip, installed dependencies. -- done aug 31, 2004

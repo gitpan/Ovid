@@ -29,15 +29,19 @@ sub redirect_io
 {
   my ($self, $handle, $logfile) = @_;
   
-  $self->handle($handle);
-  
   my $tmp_handle;
   
-  open $tmp_handle, ">&", $handle   or fatal "cannot dup handle: $!";
+  my $fd = fileno($handle); 
+
+  $self->handle($handle);
+
+  unless (open($tmp_handle, ">&$fd")){
+      fatal "cannot dup handle $handle: $!";
+  }
   
-  $self->tmp_handle($tmp_handle);
-  
-  open $handle, '>>', $logfile or die "cannot redirect handle to file [$logfile]: $!";
+  $self->tmp_handle(*$tmp_handle{IO});
+  close $handle; 
+  open $handle, ">>$logfile" or die "cannot redirect handle to file [$logfile]: $!";
   
   select $handle; $| = 1;     # make unbuffered
   
@@ -49,7 +53,9 @@ sub restore_io
   my ($self) = @_;
   return unless $self->active;
   if (my ($t, $s) = ($self->handle, $self->tmp_handle)){
-    open $t, ">&", $s  or fatal "cannot restore handle: $!";
+    my $fd = fileno($s);
+    close($t);
+    open $t, ">&$fd"  or fatal "cannot restore handle: $!";
     $self->active(0);
   }
 }

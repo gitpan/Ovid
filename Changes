@@ -1,5 +1,28 @@
 Revision history for Perl extension Ovid.
 
+0,06  Sat Jan 01 2005
+  - removed IO redirection. It was just not working well.
+  - removed log file options. Not necessary.
+  - added ability to list dependencies.
+  - generate rpm filename based on CPAN distribution name. Sometimes this matters.
+
+0.05  Wed Dec 08 2004
+
+  -Works with perl 5.6+. Thanks: Steven Ruby
+
+  -expose any CPAN errors.
+
+  -improve documentation
+  
+  -Add -i option to ignore certain modules
+
+  -Change -v option to be more standard
+
+  -Remove non-standard loglevel option.
+
+  -avoid perl 5.8 style constant declarations to maintain
+   compatibility with older perls.
+
 0.04  Mon Sep 27 2004
   -expand bundles into individual distributions
 

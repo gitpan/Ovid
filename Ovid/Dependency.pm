@@ -4,10 +4,8 @@ use strict;
 
 use Ovid::Common;
 use Ovid::Error;
-use Ovid::RunQuiet;
 
 @Ovid::Dependency::ISA = qw(Ovid::Common Ovid::Error);
-
 
 sub init {
   my $self = shift;
@@ -18,7 +16,7 @@ sub init {
 
 sub accessors
 {
-  return { scalar => [qw(builder dir logfile)], array => [qw()]};
+  return { scalar => [qw(builder dir)], array => [qw()]};
 }
 
 sub find_builder
@@ -58,7 +56,7 @@ sub dependencies
     my $builder = $self->find_builder;
     
     my $pid = open(D, "-|");
-    
+    my $prefix='ovid-dependency:::'; 
     if ($pid == -1){
       fatal "cannot fork";
     }
@@ -66,7 +64,7 @@ sub dependencies
        my @deps;
        while (defined ($_ = <D>)) {
          chomp;
-         if (/^(\S+)\s+(\S+)/){
+         if (/^$prefix(\S+)\s+(\S+)/){
            push @deps, { name => $1, version => $2 };
          }
        }
@@ -79,8 +77,6 @@ sub dependencies
         my $outhandle = \*STDOUT;
 
         eval {
-          my $q = Ovid::RunQuiet->new;
-          $q->run( sub {
                      no warnings;
                      no strict;
                      local *CORE::exit = *CORE::return;
@@ -93,8 +89,7 @@ sub dependencies
                               };
                      chdir ($dir) or fatal "cannot chdir to $dir. $!"; 
                      do $builder;
-                   }, $self->logfile);
-        };
+             };
 
         if ($@)
         {
@@ -104,7 +99,7 @@ sub dependencies
         {
           for my $r (@deps){
             while (my ($k, $v) = each %$r){
-              print $outhandle qq[$k\t$v\n];
+              print $outhandle qq[${prefix}$k\t$v\n];
             }
           }
         }

@@ -7,11 +7,8 @@ use Exporter;
 
 our $LOG_LEVEL;
 
-use constant
-  {
-    LOG_LEVEL_DEBUG => 2,
-    LOG_LEVEL_INFO => 4,
-  };
+use constant LOG_LEVEL_DEBUG => 2;
+use constant LOG_LEVEL_INFO => 4;
 
 sub info (@);
 sub debug (@);

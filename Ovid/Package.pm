@@ -13,8 +13,9 @@ our @macros = qw(rpmdir sourcedir specdir);
 
 sub accessors
 {
-  return {scalar => [qw(forcebuild logfile skipbuild rpm_bin rpmbuild_bin name version builder basedir copyright
-                     archive description date buildroot tmpdir build_dir packager), @macros],
+  return {scalar => [qw(forcebuild logfile skipbuild rpm_bin rpmbuild_bin 
+                        rpm_name name version builder basedir copyright
+                        archive description date buildroot tmpdir build_dir packager), @macros],
                      
           array => [qw(provides requires)]};
 }
@@ -24,7 +25,7 @@ sub defaults
     return {
             copyright => 'Perl/Artistic License?',
             date => POSIX::strftime('%a %b %d %Y', localtime()),
-            };
+           };
 }
 
 sub init
@@ -32,7 +33,8 @@ sub init
   my $self = shift;
   
   #Find binaries.
-  for my $b (qw(rpm rpmbuild)){
+  my @bin = qw(rpm);
+  while (my $b = pop @bin){
     my $bin = $self->find_exec($b);
     fatal "cannot find required binary [$b]" unless $bin;
     my $n = "${b}_bin";
@@ -42,9 +44,20 @@ sub init
     else {
       fatal "required accessor [$n] is undeclared";
     }
+    #rpm 4.x uses rpmbuild instead of rpm
+    if ($b eq 'rpm'){
+     my $t = `$bin --version`;
+     if ($t =~ m/3.\d.\d\s*$/){
+        $self->rpmbuild_bin($bin);
+     }
+     else {
+        push @bin, 'rpmbuild';
+     }
+    }
   }
   
   $self->load_macros(@macros); 
+
 }
 
 sub interrogate
@@ -68,6 +81,7 @@ sub interrogate
     }
   }
 
+  $self->parse_archive;
 }
 
 sub load_macros
@@ -159,34 +173,31 @@ sub name_string
   my $self = shift;
   my %args = @_;
   
-  my @name = ($self->name);
-  $name[0] =~ s/::/-/g;
+  my @name = ($self->rpm_name);
+  #$name[0] =~ s/::/-/g;
   
   push(@name, '-', $self->version) if exists $args{with_version};
   unshift(@name, 'perl-') if exists $args{prefixed};
   return join '', @name;
 }
 
-sub set_version
+sub parse_archive 
 {
   my $self = shift;
   my $t = $self->archive;
   
-  my ($version) = $t =~ m/([\d.-_]+).[a-z.]$/;
-  if ($version){
-    $self->version($version);
+  if ($t =~ m~([^/]+?)-([.\d]+[a-z]?)(?:\.tar\.gz|\.tgz|\.zip|\.gz)?$~){
+      $self->rpm_name($1);
+      $self->version($2);
   }
-  else
-  {
-    fatal "cannot get version from archive name [$t]";
-  }        
+  else {
+    fatal "cannot parse archive name [$t]";
+  }
 }
 
 sub make_spec
 {
   my ($self) = @_;
-  
-  $self->set_version unless $self->version;
   
   my $t = $self->accessors;
   my %macros;

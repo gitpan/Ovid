@@ -1,28 +1,45 @@
+package Ovid::Redirect;
+
+sub new
+{
+  my $self = bless {}, __PACKAGE__;
+  open(TMPOUT,  ">&STDOUT");
+  open(TMPERR,  ">&STDERR");
+  
+  open(STDERR, ">&TMPOUT");
+  open(STDOUT, ">&TMPERR");      
+
+  $self->{stdout} = *TMPOUT{IO};
+  $self->{stderr} = *TMPERR{IO};
+  return $self;
+}
+
+sub restore  {
+  my $self = shift;
+  open(STDERR, ">&$self->{stderr}");
+  open(STDOUT, ">&$self->{stdout}");
+}
+
 package Ovid::RunQuiet;
 
 use strict;
 
 use Ovid::Common;
-use Ovid::IORedirector;
 use Ovid::Error;
 
 @Ovid::RunQuiet::ISA = qw(Ovid::Common Ovid::Error);
 
-sub accessors { return { scalar => [qw(logfile)]}; }
+sub accessors { return { scalar => [qw()]}; }
+
 
 sub run
   {
-    my ($self, $routine, $logfile) = @_;
-    
-    my $io_stdout = Ovid::IORedirector->new(handle => \*STDOUT, logfile => $logfile);
-    my $io_stderr = Ovid::IORedirector->new(handle => \*STDERR, logfile => $logfile);
-    my ($io_stdout, $io_stderr);
-    my $results = &$routine;
-    undef $io_stderr;
-    undef $io_stdout;
-    my $caller = caller();
-    return $results;
+    my ($routine) = @_;
+    my $io = Ovid::Redirect->new;
+    &$routine;
+    $io->restore;
   }
+
 
 1;
 

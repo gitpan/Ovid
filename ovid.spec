@@ -1,7 +1,7 @@
 %define _unpackaged_files_terminate_build 0
 Summary: Ovid 
 Name: ovid 
-Version: 0.03 
+Version: 0.06 
 Release: 1
 Copyright: distributable
 Group: Applications/CPAN
@@ -17,9 +17,7 @@ Requires: perl(strict)
 Provides: perl(Ovid::Common)
 Provides: perl(Ovid::Dependency)
 Provides: perl(Ovid::Error)
-Provides: perl(Ovid::IORedirector)
 Provides: perl(Ovid::Package)
-Provides: perl(Ovid::RunQuiet)
 
 %description
 Ovid recursively builds CPAN modules and all dependent modules as RPM files.  
