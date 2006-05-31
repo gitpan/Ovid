@@ -1,7 +1,7 @@
 %define _unpackaged_files_terminate_build 0
 Summary: Ovid 
 Name: ovid 
-Version: 0.06 
+Version: 0.11
 Release: 1
 Copyright: distributable
 Group: Applications/CPAN
@@ -36,13 +36,13 @@ rm -rf $RPM_BUILD_ROOT
 rm -rf $RPM_BUILD_ROOT
 
 make PREFIX=%{_prefix} \
-     PERL_INSTALL_ROOT=$RPM_BUILD_ROOT \
+     DESTDIR=${RPM_BUILD_ROOT}/ \
      install
 
 [ -x /usr/lib/rpm/brp-compress ] && /usr/lib/rpm/brp-compress
 
 find ${RPM_BUILD_ROOT} \
-  \( -path '*/perllocal.pod' -o -path '*/.packlist' \) -a -prune -o \
+  \( -path '*/perllocal.pod' -o -path '*/.packlist' -o -path '*.bs' \) -a -prune -o \
   -type f -printf "/%%P\n" > Ovid-filelist
 
 if [ "$(cat Ovid-filelist)X" = "X" ] ; then
@@ -56,5 +56,8 @@ fi
 
 
 %changelog
+* Mon Mar 21 2005 Gyepi Sam <gyepi@praxis-sw.com>
+-Changed PERL_INSTALL_ROOT to DESTDIR to make newer ExtUtils::MakeMaker behave correctly.
+-Omit *.bs files from rpm list.
 * Sun Aug 15 2004 Gyepi Sam <gyepi@praxis-sw.com>
 - Initial build

@@ -1,15 +1,23 @@
 TODO list for Ovid.
 
-Replace CPAN module with native functions.
-
 Items closer to the top will likely be done first.
+
+Replace CPAN module with native functions.
 
 Add support for Module::Build.
 
 Try harder to get module descriptions, copyright, and other metadata. 
 
-
 Create Bundle dummy packages that simply require component parts
+
+Find solutions to building modules that:
+
+  insist on querying the user for configuration info at build time, causing ovid to hang until the user responds.
+
+  require dependencies to be installed before they'll build. Obviously this make
+  sense for some modules, but not all.
+
+  do not list requirements with ExtUtils::MakeMaker and try to figure it out themselves.
 
 Done:
 Nicer looking help output.

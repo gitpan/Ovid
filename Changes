@@ -1,4 +1,26 @@
 Revision history for Perl extension Ovid.
+0.11  Tue May 30 2006
+ - Change long deprecated 'Copyright' spec tag to 'License'
+   Add '=s' modifier to packager option.
+   Thanks:  Richard Siddall
+ - Maintain option list in array instead of hash to maintain order.
+
+0.10  Wed May 17 2006
+ - Propagate CFLAGS environment variable into spec file.
+
+0.09  Fri Feb 17 2006
+  - Updated version parser to handle the v in name-v0.1
+
+0.08  Mon Mar 21 2005
+  - Added installdirs option.
+  - Removed unused modules Ovid::RunQuiet and Ovid::IORedirector.
+  - changed rpm spec file and generated spec files to use
+    DESTDIR instead of PERL_INSTALL_ROOT, which is apparently old.
+    Thanks: SHLOMIF via RT bugs list
+  - changed rpm spec file and generated spec files to ignore *.bs files
+
+0.07  Tue Feb 15 2005
+  - Added skip-perl-rpm-modules option. Thanks: Rob Kearey
 
 0,06  Sat Jan 01 2005
   - removed IO redirection. It was just not working well.

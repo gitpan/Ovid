@@ -14,7 +14,7 @@ our @macros = qw(rpmdir sourcedir specdir);
 sub accessors
 {
   return {scalar => [qw(forcebuild logfile skipbuild rpm_bin rpmbuild_bin 
-                        rpm_name name version builder basedir copyright
+                        rpm_name name version builder basedir license installdirs
                         archive description date buildroot tmpdir build_dir packager), @macros],
                      
           array => [qw(provides requires)]};
@@ -23,7 +23,7 @@ sub accessors
 sub defaults
 {
     return {
-            copyright => 'Perl/Artistic License?',
+            license => 'Perl/Artistic License?',
             date => POSIX::strftime('%a %b %d %Y', localtime()),
            };
 }
@@ -186,7 +186,7 @@ sub parse_archive
   my $self = shift;
   my $t = $self->archive;
   
-  if ($t =~ m~([^/]+?)-([.\d]+[a-z]?)(?:\.tar\.gz|\.tgz|\.zip|\.gz)?$~){
+  if ($t =~ m~([^/]+?)-v?([.\d]+[a-z]?)(?:\.tar\.gz|\.tgz|\.zip|\.gz)?$~){
       $self->rpm_name($1);
       $self->version($2);
   }
@@ -259,7 +259,7 @@ sub make_rpm
   }
   
   $self->copy_sources;
-  system('rpmbuild', '-ba', $specfile);
+  system($self->rpmbuild_bin, '-ba', $specfile);
 }
 
 sub rpm_is_installed
@@ -270,8 +270,8 @@ sub rpm_is_installed
 
   for my $name_ver ($self->name_string(with_version => 1),
                 $self->name_string(with_version => 1, prefixed => 1)){
-
-    my $t = qx($rpm_bin -q $name_ver --queryformat '%{version}');
+    #old versions of rpm print errors to stderr, while new ones send to stdout.
+    my $t = qx(exec 2>&1; $rpm_bin -q $name_ver --queryformat '%{version}');
     chomp $t;
     if ($t =~ /^$version/){
       return $name_ver;
@@ -342,7 +342,7 @@ Summary: perl-@name@
 Name: perl-@name@ 
 Version: @version@ 
 Release: 1
-Copyright: @copyright@
+License: @license@
 Group: Applications/CPAN
 Source: @archive@ 
 BuildRoot: @buildroot@/@name@
@@ -359,7 +359,7 @@ AutoReqProv: no
 %setup -q -n @build_dir@
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" perl @builder@ 
+CFLAGS="$RPM_OPT_FLAGS $CFLAGS" perl @builder@ 
 make
 
 %clean 
@@ -371,13 +371,14 @@ fi
 %install
 
 make PREFIX=%{_prefix} \
-     PERL_INSTALL_ROOT=%{buildroot} \
+     DESTDIR=%{buildroot} \
+     INSTALLDIRS=@installdirs@ \
      install
 
 [ -x /usr/lib/rpm/brp-compress ] && /usr/lib/rpm/brp-compress
 
 find ${RPM_BUILD_ROOT} \
-  \( -path '*/perllocal.pod' -o -path '*/.packlist' \) -a -prune -o \
+  \( -path '*/perllocal.pod' -o -path '*/.packlist' -o -path '*.bs' \) -a -prune -o \
   -type f -printf "/%%P\n" > @name@-filelist
 
 if [ "$(cat @name@-filelist)X" = "X" ] ; then
