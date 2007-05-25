@@ -1,4 +1,8 @@
 Revision history for Perl extension Ovid.
+0.12  Friday May 25 2007
+ - Update version regex matcher to reflect the variety of version schemes on CPAN.
+   Thanks: Kevin Frost
+
 0.11  Tue May 30 2006
  - Change long deprecated 'Copyright' spec tag to 'License'
    Add '=s' modifier to packager option.

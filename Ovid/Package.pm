@@ -186,12 +186,18 @@ sub parse_archive
   my $self = shift;
   my $t = $self->archive;
   
-  if ($t =~ m~([^/]+?)-v?([.\d]+[a-z]?)(?:\.tar\.gz|\.tgz|\.zip|\.gz)?$~){
+  if ($t =~ /^Contact Author/) {
+    fatal "package [@{[$self->name]}] says: $t\n";
+  }
+
+  $t =~ s/(\.(?:tar\.gz|tgz|zip|gz|pm\.gz|pm))$//;
+
+  if ($t =~ m<([^/]+?)[-._]?v?-?([-_.\d]+[a-z]*?\d*)$>){
       $self->rpm_name($1);
       $self->version($2);
   }
   else {
-    fatal "cannot parse archive name [$t]";
+    fatal "cannot parse archive name [@{[$self->archive]}]";
   }
 }
 

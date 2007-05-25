@@ -10,7 +10,7 @@ use Ovid::Error;
 use Ovid::Package;
 use Ovid::Dependency;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 unshift @INC, File::Spec->catdir($ENV{HOME},".cpan");
 eval {require CPAN::MyConfig;};
@@ -310,7 +310,7 @@ RPM Packager. Defaults to unknown@localhost.
 
 =item  --verbose | -v
 
-Increase verbosity. Multiple uses has a cumulative effect.
+Increase verbosity. Multiple uses have a cumulative effect.
 
 =item  --tmpdir | -t  <tmpdir>
 
@@ -351,7 +351,7 @@ Gyepi Sam, E<lt>gyepi@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Gyepi Sam
+Copyright 2004-2007 by Gyepi Sam
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 

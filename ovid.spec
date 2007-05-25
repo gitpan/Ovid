@@ -1,9 +1,9 @@
 %define _unpackaged_files_terminate_build 0
 Summary: Ovid 
 Name: ovid 
-Version: 0.11
+Version: 0.12
 Release: 1
-Copyright: distributable
+License: Perl Artistic 
 Group: Applications/CPAN
 Source: Ovid-%{version}.tar.gz 
 BuildRoot: /tmp/Ovid
@@ -56,6 +56,11 @@ fi
 
 
 %changelog
+* Fri May 25 2007 Gyepi Sam <gyepi@praxis-sw.com>
+- Updated to v0.12
+- Changed Copyright header to License.
+- Changed License to Perl Artistic instead of distributable.
+
 * Mon Mar 21 2005 Gyepi Sam <gyepi@praxis-sw.com>
 -Changed PERL_INSTALL_ROOT to DESTDIR to make newer ExtUtils::MakeMaker behave correctly.
 -Omit *.bs files from rpm list.
